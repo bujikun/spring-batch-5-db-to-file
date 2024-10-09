@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: db-to-file-batch-processing
+  flyway:
+    baseline-on-migrate: true
