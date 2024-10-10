@@ -14,10 +14,14 @@ public class SalesItemProcessor implements ItemProcessor<Sale, Sale> {
     @Override
     @Nullable
     public Sale process(@NonNull Sale item) throws Exception {
-       // log.info("processing item : {}", item);
-        if (item.country().equalsIgnoreCase("United States")) {
-            return null;
-        }
-        return item;
+        // log.info("processing item : {}", item);
+//        if (item.country().equalsIgnoreCase("United States")) {
+//            return null;
+//        }
+
+        return new Sale(item.saleId(), item.productId(), item.customerId(),
+                item.saleDate(), item.saleAmount(), item.storeLocation(),
+                item.country().toUpperCase(), item.processed()
+        );
     }
 }

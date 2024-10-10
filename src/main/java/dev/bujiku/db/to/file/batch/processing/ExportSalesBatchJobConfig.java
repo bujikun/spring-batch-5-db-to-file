@@ -8,8 +8,9 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.database.JdbcCursorItemReader;
-import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.Order;
+import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -36,23 +38,44 @@ public class ExportSalesBatchJobConfig {
     private final PlatformTransactionManager platformTransactionManager;
     private final SalesUpdateListener salesUpdateListener;
 
+//    @Bean
+//    @StepScope
+//    public JdbcCursorItemReader<Sale> salesItemReader(@Value("#{jobParameters}") Map<String, Object> parameters) {
+//        var processed = parameters.get("processed");
+//        var sql = """
+//                SELECT sale_id, product_id, customer_id, sale_date, sale_amount, store_location, country,processed
+//                FROM sales
+//                WHERE processed=?
+//                """;
+//        return new JdbcCursorItemReaderBuilder<Sale>()
+//                .name("salesReader")
+//                .dataSource(dataSource)
+//                .sql(sql)
+//                .fetchSize(100)
+//                .rowMapper(new SalesRowMapper())
+//                .verifyCursorPosition(false)
+//                .queryArguments(processed)
+//                .build();
+//    }
+
     @Bean
     @StepScope
-    public JdbcCursorItemReader<Sale> salesItemReader(@Value("#{jobParameters}") Map<String, Object> parameters) {
+    public JdbcPagingItemReader<Sale> alesItemReader(@Value("#{jobParameters}") Map<String, Object> parameters) {
         var processed = parameters.get("processed");
-        var sql = """
-                SELECT sale_id, product_id, customer_id, sale_date, sale_amount, store_location, country,processed
-                FROM sales
-                WHERE processed=?
-                """;
-        return new JdbcCursorItemReaderBuilder<Sale>()
+        var selectClause = "SELECT sale_id, product_id, customer_id, sale_date, sale_amount, store_location, country,processed";
+        var fromClause = "FROM sales";
+        var whereClause = "WHERE processed=:processed";
+        return new JdbcPagingItemReaderBuilder<Sale>()
                 .name("salesReader")
                 .dataSource(dataSource)
-                .sql(sql)
-                .fetchSize(100)
                 .rowMapper(new SalesRowMapper())
-                .verifyCursorPosition(false)
-                .queryArguments(processed)
+                .saveState(false)
+                .selectClause(selectClause)
+                .fromClause(fromClause)
+                .whereClause(whereClause)
+                .pageSize(300)
+                .sortKeys(Collections.singletonMap("sale_id", Order.ASCENDING))
+                .parameterValues(Collections.singletonMap("processed", processed))
                 .build();
     }
 
@@ -65,19 +88,20 @@ public class ExportSalesBatchJobConfig {
                 .delimited()
                 .delimiter(",")
                 .sourceType(Sale.class)
-                .names("product_id", "customer_id", "sale_date", "sale_amount", "store_location", "country","processed")
+                .names("product_id", "customer_id", "sale_date", "sale_amount", "store_location", "country", "processed")
                 .shouldDeleteIfEmpty(true)
                 .headerCallback(writer -> {
                     writer.append("sale_id, product_id, customer_id, sale_date, sale_amount, store_location, country,processed");
                 })
+                .saveState(false)
                 .build();
     }
 
     @Bean
-    public Step readFromDBAndWriteToFileStep(JdbcCursorItemReader<Sale> salesItemReader,
+    public Step readFromDBAndWriteToFileStep(JdbcPagingItemReader<Sale> salesItemReader,
                                              FlatFileItemWriter<Sale> salesFlatFileItemWriter) {
         return new StepBuilder("readFromDBAndWriteToFileStep", jobRepository)
-                .<Sale, Sale>chunk(200, platformTransactionManager)
+                .<Sale, Sale>chunk(600, platformTransactionManager)
                 .reader(salesItemReader)
                 .processor(new SalesItemProcessor())
                 .writer(salesFlatFileItemWriter)
@@ -85,13 +109,13 @@ public class ExportSalesBatchJobConfig {
                 .listener(new SalesItemReadListener())
                 .listener(salesUpdateListener)
                 //.skipPolicy(new AlwaysSkipItemSkipPolicy())
-                //.taskExecutor(taskExecutor())
+                .taskExecutor(taskExecutor())
                 .build();
     }
 
     private TaskExecutor taskExecutor() {
         var executor = new SimpleAsyncTaskExecutor();
-        executor.setConcurrencyLimit(100);
+        executor.setConcurrencyLimit(5000);
         executor.setVirtualThreads(true);
         return executor;
     }
@@ -102,6 +126,7 @@ public class ExportSalesBatchJobConfig {
         return new JobBuilder("readFromDBAndWriteToFileJob-" + now, jobRepository)
                 .start(readFromDBAndWriteToFileStep)
                 .incrementer(new RunIdIncrementer())
+                .preventRestart()
                 .build();
     }
 
