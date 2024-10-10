@@ -14,8 +14,8 @@ public class SalesItemProcessor implements ItemProcessor<Sale, Sale> {
     @Override
     @Nullable
     public Sale process(@NonNull Sale item) throws Exception {
-        log.info("processing item : {}", item);
-        if (item.country().equalsIgnoreCase("United Status")) {
+       // log.info("processing item : {}", item);
+        if (item.country().equalsIgnoreCase("United States")) {
             return null;
         }
         return item;
