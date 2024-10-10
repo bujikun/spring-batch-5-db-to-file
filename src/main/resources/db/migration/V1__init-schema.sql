@@ -7,7 +7,7 @@ create table if not exists `sales`
     `sale_amount`    decimal(10, 2) not null,
     `store_location` varchar(100)   not null,
     `country`        varchar(100)   not null,
-    `processed`      bit            null
+    `processed`      bit            default 0
 
 );
 
