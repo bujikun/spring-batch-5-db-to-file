@@ -1,9 +1,7 @@
 package dev.bujiku.db.to.file.batch.processing;
 
-import lombok.Getter;
-
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * @author Newton Bujiku
@@ -12,7 +10,7 @@ import java.time.Instant;
 public record Sale(Long saleId,
                    Integer productId,
                    Integer customerId,
-                   Instant saleDate,
+                   LocalDate saleDate,
                    BigDecimal saleAmount,
                    String storeLocation,
                    String country,
