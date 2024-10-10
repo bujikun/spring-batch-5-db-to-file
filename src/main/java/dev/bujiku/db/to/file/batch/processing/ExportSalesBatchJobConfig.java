@@ -1,9 +1,12 @@
 package dev.bujiku.db.to.file.batch.processing;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.skip.AlwaysSkipItemSkipPolicy;
@@ -73,8 +76,8 @@ public class ExportSalesBatchJobConfig {
     }
 
     @Bean
-    public Step step(JdbcCursorItemReader<Sale> salesItemReader, FlatFileItemWriter<Sale> salesFlatFileItemWriter) {
-        return new StepBuilder("readFromDBAndWriteToFile", jobRepository)
+    public Step readFromDBAndWriteToFileStep(JdbcCursorItemReader<Sale> salesItemReader, FlatFileItemWriter<Sale> salesFlatFileItemWriter) {
+        return new StepBuilder("readFromDBAndWriteToFileStep", jobRepository)
                 .<Sale, Sale>chunk(200, platformTransactionManager)
                 .reader(salesItemReader)
                 .processor(new SalesItemProcessor())
@@ -90,6 +93,14 @@ public class ExportSalesBatchJobConfig {
         executor.setConcurrencyLimit(100);
         executor.setVirtualThreads(true);
         return executor;
+    }
+
+    @Bean
+    public Job readFromDBAndWriteToFileJob(Step readFromDBAndWriteToFileStep) {
+        return new JobBuilder("readFromDBAndWriteToFileJob", jobRepository)
+                .start(readFromDBAndWriteToFileStep)
+                .incrementer(new RunIdIncrementer())
+                .build();
     }
 
 }
