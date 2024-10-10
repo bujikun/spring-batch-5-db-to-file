@@ -25,5 +25,19 @@ spring:
   threads:
     virtual:
       enabled: true
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: never
+    properties:
+      org:
+        quartz:
+          jobStore:
+            isClustered: false
+            misfireThreshold: 1000
+          threadPool:
+            threadCount: 25
+            threadPriority: 5
+
 server:
   port: 9080

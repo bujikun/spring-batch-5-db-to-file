@@ -28,7 +28,7 @@ public class ExportSalesJobRunner {
     private final JobLauncher jobLauncher;
     private final Job readFromDBAndWriteToFileJob;
 
-    @EventListener(ApplicationReadyEvent.class)
+    //@EventListener(ApplicationReadyEvent.class)
     public void runJob() {
         var now = LocalDateTime.now().toString();
         var jobParameters = new JobParametersBuilder()

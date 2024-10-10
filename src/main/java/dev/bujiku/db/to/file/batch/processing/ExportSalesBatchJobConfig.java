@@ -105,7 +105,7 @@ public class ExportSalesBatchJobConfig {
                 .reader(salesItemReader)
                 .processor(new SalesItemProcessor())
                 .writer(salesFlatFileItemWriter)
-                .faultTolerant()
+                //.faultTolerant()
                 .listener(new SalesItemReadListener())
                 .listener(salesUpdateListener)
                 //.skipPolicy(new AlwaysSkipItemSkipPolicy())
