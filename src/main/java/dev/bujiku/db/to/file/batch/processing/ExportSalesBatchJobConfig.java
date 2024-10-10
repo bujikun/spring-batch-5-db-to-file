@@ -2,7 +2,11 @@ package dev.bujiku.db.to.file.batch.processing;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.step.skip.AlwaysSkipItemSkipPolicy;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.file.FlatFileHeaderCallback;
@@ -12,6 +16,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -25,6 +32,8 @@ import java.io.Writer;
 @RequiredArgsConstructor
 public class ExportSalesBatchJobConfig {
     private final DataSource dataSource;
+    private final JobRepository jobRepository;
+    private final PlatformTransactionManager platformTransactionManager;
 
     @Bean
     @StepScope
@@ -61,6 +70,26 @@ public class ExportSalesBatchJobConfig {
                     writer.append("Header");
                 })
                 .build();
+    }
+
+    @Bean
+    public Step step(JdbcCursorItemReader<Sale> salesItemReader, FlatFileItemWriter<Sale> salesFlatFileItemWriter) {
+        return new StepBuilder("readFromDBAndWriteToFile", jobRepository)
+                .<Sale, Sale>chunk(200, platformTransactionManager)
+                .reader(salesItemReader)
+                .processor(new SalesItemProcessor())
+                .writer(salesFlatFileItemWriter)
+                .faultTolerant()
+                .skipPolicy(new AlwaysSkipItemSkipPolicy())
+                .taskExecutor(taskExecutor())
+                .build();
+    }
+
+    private TaskExecutor taskExecutor() {
+        var executor = new SimpleAsyncTaskExecutor();
+        executor.setConcurrencyLimit(100);
+        executor.setVirtualThreads(true);
+        return executor;
     }
 
 }
