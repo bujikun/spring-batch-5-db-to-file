@@ -9,7 +9,6 @@ import java.time.Instant;
  * @author Newton Bujiku
  * @since 2024
  */
-@Getter
 public record Sale(Long saleId,
                    Integer productId,
                    Integer customerId,
