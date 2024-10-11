@@ -34,10 +34,14 @@ spring:
         quartz:
           jobStore:
             isClustered: false
-            misfireThreshold: 1000
+            misfireThreshold: 60000
           threadPool:
-            threadCount: 25
+            threadCount: 20
             threadPriority: 5
 
 server:
   port: 9080
+#logging:
+#  level:
+#    org:
+#      quartz: DEBUG
