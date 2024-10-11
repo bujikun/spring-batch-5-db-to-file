@@ -21,10 +21,10 @@ public class SalesUpdateListener implements ItemWriteListener<Sale> {
     public void afterWrite(Chunk<? extends Sale> items) {
         items.forEach(this::updateSaleProcessedStatus);
     }
-
     private void updateSaleProcessedStatus(Sale sale) {
         jdbcClient.sql("UPDATE sales SET processed=:processed WHERE sale_id=:saleId")
-                .param("processed", 1)
+                .param("processed", 0)
+//                .param("processed", 1)
                 .param("saleId", sale.saleId())
                 .update();
     }

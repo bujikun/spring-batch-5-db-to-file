@@ -2,48 +2,36 @@ package dev.bujiku.db.to.file.batch.processing;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.JobParametersInvalidException;
-import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRestartException;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.relational.core.sql.In;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 
 /**
  * @author Newton Bujiku
  * @since 2024
  */
-@Component
+//@Configuration
 @RequiredArgsConstructor
 @Slf4j
 public class ExportSalesJobRunner {
-    private final JobLauncher jobLauncher;
-    private final Job readFromDBAndWriteToFileJob;
+    private final QuartzSchedulerService quartzSchedulerService;
 
-    //@EventListener(ApplicationReadyEvent.class)
-    public void runJob() {
-        var now = LocalDateTime.now().toString();
-        var jobParameters = new JobParametersBuilder()
-                .addLong("processed", 0L)
-                .addString("filename", now + "-non-usa-sales.csv")
-                .addLocalDate("run on", LocalDate.now())
-                .toJobParameters();
+//    @Bean
+//    public CommandLineRunner commandLineRunner(){
+//        return args -> {
+//            var millsToStart = Instant.now().plus(30, ChronoUnit.SECONDS).toEpochMilli();
+//            var triggerInfo = new TriggerInfo(4, false, 1000,
+//                    new Date(System.currentTimeMillis()), "");
+//            quartzSchedulerService.scheduleQuartzJob(QuartzJob.class, triggerInfo);
+//        };
+//    }
 
-        try {
-            jobLauncher.run(readFromDBAndWriteToFileJob, jobParameters);
-        } catch (JobExecutionAlreadyRunningException | JobRestartException | JobInstanceAlreadyCompleteException |
-                 JobParametersInvalidException e) {
-            log.error("an error occurred while running {} due to {}", "readFromDBAndWriteToFileJob", e.getMessage());
-            throw new RuntimeException(e);
-        }
-
-    }
 }

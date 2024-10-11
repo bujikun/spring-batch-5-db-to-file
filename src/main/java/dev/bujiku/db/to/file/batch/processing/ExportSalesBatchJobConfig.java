@@ -24,6 +24,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -62,9 +63,14 @@ public class ExportSalesBatchJobConfig {
     @StepScope
     public JdbcPagingItemReader<Sale> alesItemReader(@Value("#{jobParameters}") Map<String, Object> parameters) {
         var processed = parameters.get("processed");
+        var country = parameters.get("country");
         var selectClause = "SELECT sale_id, product_id, customer_id, sale_date, sale_amount, store_location, country,processed";
         var fromClause = "FROM sales";
-        var whereClause = "WHERE processed=:processed";
+        var whereClause = "WHERE processed=:processed AND country=:country";
+        var paramMap = new HashMap<String, Object>();
+        paramMap.put("processed", processed);
+        paramMap.put("country", country);
+        var parameterValues = Collections.unmodifiableMap(paramMap);
         return new JdbcPagingItemReaderBuilder<Sale>()
                 .name("salesReader")
                 .dataSource(dataSource)
@@ -75,7 +81,7 @@ public class ExportSalesBatchJobConfig {
                 .whereClause(whereClause)
                 .pageSize(300)
                 .sortKeys(Collections.singletonMap("sale_id", Order.ASCENDING))
-                .parameterValues(Collections.singletonMap("processed", processed))
+                .parameterValues(parameterValues)
                 .build();
     }
 
@@ -129,5 +135,6 @@ public class ExportSalesBatchJobConfig {
                 .preventRestart()
                 .build();
     }
+
 
 }
