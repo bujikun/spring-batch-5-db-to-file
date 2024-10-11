@@ -32,13 +32,11 @@ public class QuartzConfig {
         this.username = username;
         this.password = password;
         this.jdbcUrl = jdbcUrl;
-
     }
 
     @Bean
     @QuartzDataSource
     public DataSource quartzDataSource() {
-
         var hikariConfig = new HikariConfig();
         hikariConfig.setDriverClassName("org.mariadb.jdbc.Driver");
         hikariConfig.setConnectionTimeout(30000);
@@ -56,8 +54,7 @@ public class QuartzConfig {
     @Bean
     @QuartzTransactionManager
     public PlatformTransactionManager quartzTransactionManager(DataSource quartzDataSource) {
-        return new DataSourceTransactionManager(quartzDataSource);
+        return new DataSourceTransactionManager(quartzDataSource());
     }
-
 
 }
